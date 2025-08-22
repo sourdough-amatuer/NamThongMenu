@@ -2,10 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Hello Café</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hello Café — Menu</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
+    h1, h2 { margin-top: 1.5rem; }
+    .item { margin-bottom: 1rem; }
+    .price { float: right; font-weight: bold; }
+    .desc { font-size: 0.9em; color: #555; }
+  </style>
 </head>
 <body>
-  <h1>Welcome to My Café</h1>
-  <p>This is the beginning of my online menu 🚀</p>
+  <h1 id="cafename"></h1>
+  <p id="notice"></p>
+  <div id="menu"></div>
+
+  <script>
+    async function loadMenu() {
+      const res = await fetch('menu.json?' + Date.now()); // prevent caching
+      const data = await res.json();
+
+      document.getElementById('cafename').textContent = data.name;
+      document.getElementById('notice').textContent = data.notice;
+
+      const menuDiv = document.getElementById('menu');
+      menuDiv.innerHTML = '';
+
+      data.sections.forEach(section => {
+        const sec = document.createElement('section');
+        sec.innerHTML = `<h2>${section.name}</h2>`;
+        section.items.forEach(it => {
+          const item = document.createElement('div');
+          item.className = 'item';
+          item.innerHTML = `
+            <span>${it.name}</span>
+            <span class="price">$${it.price.toFixed(2)}</span>
+            <div class="desc">${it.desc}</div>
+          `;
+          sec.appendChild(item);
+        });
+        menuDiv.appendChild(sec);
+      });
+    }
+    loadMenu();
+  </script>
 </body>
 </html>
