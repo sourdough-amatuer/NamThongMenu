@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Nam Thong Menu</title>
-<meta name="description" content="View Nam Thong's Menu">
+<title>Your Café — Menu</title>
+<meta name="description" content="Your Café menu">
 <style>
   :root{
     --bg:#ffffff; --text:#222; --muted:#666; --accent:#2a9d8f;
@@ -19,12 +19,16 @@
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
   .wrap{max-width:900px;margin:0 auto;padding:0 16px}
-  /* Sticky header with brand + tabs */
+
+  /* Sticky header with brand + search + tabs */
   header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
   .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}
   .brand h1{font-size:20px;margin:0}
   .notice{margin:0 16px 12px;color:var(--muted);font-size:.9rem}
-  /* Tabs */
+  .search{padding:0 16px 12px}
+  .search input{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text)
+  }
   nav#nav{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 12px}
   nav#nav a{
     flex-shrink:0;text-decoration:none;color:var(--text);
@@ -32,23 +36,22 @@
     box-shadow:var(--shadow);font-size:.92rem;white-space:nowrap
   }
   nav#nav a.active{border-color:var(--accent);color:var(--accent)}
-  /* Search */
-  .search{padding:0 16px 12px}
-  .search input{
-    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text)
-  }
+
   main{padding:16px 0 40px}
   section{scroll-margin-top:110px;margin:20px 0}
   h2{font-size:1.2rem;margin:0 0 10px;padding:0 4px;border-left:4px solid var(--accent)}
-  /* Grid items */
+
   .grid{display:grid;grid-template-columns:1fr;gap:12px}
   @media(min-width:680px){ .grid{grid-template-columns:1fr 1fr} }
+
   .item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
   .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
   .title{font-weight:600}
   .price{font-variant-numeric:tabular-nums;color:var(--accent)}
+  .price-lines{ text-align:right; line-height:1.25; }
   .desc{margin:6px 0 0;color:var(--muted);font-size:.93rem}
   .tags{margin-top:6px;font-size:.8rem;color:var(--accent)}
+
   footer{border-top:1px solid var(--border);margin-top:28px}
   .small{font-size:.85rem;color:var(--muted)}
   .foot{padding:16px}
@@ -58,7 +61,7 @@
 <header>
   <div class="wrap brand">
     <h1 id="cafename">Your Café</h1>
-    <!-- Optional logo: place logo.png in repo root, then uncomment:
+    <!-- Optional logo (place logo.png in repo root):
     <img src="logo.png" alt="Logo" width="28" height="28"> -->
   </div>
   <p class="notice" id="notice">Prices include GST. Please advise staff of allergies.</p>
@@ -69,10 +72,9 @@
 </header>
 
 <main class="wrap" id="content">
-  <!-- Sections will be injected here -->
   <div id="menu"></div>
   <footer class="small">
-    <div class="foot">© <span id="y"></span> <span id="footname">Your Café</span> · <span id="footerline">U0198, Ground Floor, Jalan Tun Mustapha, Labuan, 87000, Wilayah Persekutuan, 87000 Labuan, Malaysia · +6087413857</span></div>
+    <div class="foot">© <span id="y"></span> <span id="footname">Your Café</span> · <span id="footerline">123 Sample St · Open daily 7am–3pm · 03 9000 0000</span></div>
   </footer>
 </main>
 
@@ -82,7 +84,25 @@
   const nav = document.getElementById('nav');
   const q   = document.getElementById('q');
 
-  // Cache-bust to ensure price updates show immediately
+  // Helper: flexible price renderer (single, Hot/Iced, or options[])
+  function renderPrice(it, fmt){
+    // Flexible options array: [{label:"Hot", price:5}, {label:"Iced", price:6}, {label:"Large", price:6.5}]
+    if (Array.isArray(it.options) && it.options.length){
+      return it.options
+        .filter(o => o && typeof o.price !== 'undefined')
+        .map(o => `${o.label ? (o.label + ': ') : ''}${fmt.format(Number(o.price) || 0)}`)
+        .join('<br>');
+    }
+    // Dual fields: price_hot / price_iced
+    const lines = [];
+    if (typeof it.price_hot  !== 'undefined') lines.push(`Hot: ${fmt.format(Number(it.price_hot) || 0)}`);
+    if (typeof it.price_iced !== 'undefined') lines.push(`Iced: ${fmt.format(Number(it.price_iced) || 0)}`);
+    if (lines.length) return lines.join('<br>');
+    // Fallback single price
+    return fmt.format(Number(it.price) || 0);
+  }
+
+  // Fetch menu.json with cache-bust so updates appear immediately
   const res = await fetch('menu.json?' + Date.now(), {cache:'no-store'}).catch(() => null);
   if (!res || !res.ok){
     out.innerHTML = '<p style="color:#c33">Sorry, the menu failed to load.</p>';
@@ -127,7 +147,7 @@
       art.innerHTML = `
         <div class="row">
           <div class="title">${it.name}</div>
-          <div class="price">${fmt.format(it.price || 0)}</div>
+          <div class="price price-lines">${renderPrice(it, fmt)}</div>
         </div>
         ${it.desc ? `<div class="desc">${it.desc}</div>` : ''}
         ${it.tags && it.tags.length ? `<div class="tags">${it.tags.join(' • ')}</div>` : ''}
