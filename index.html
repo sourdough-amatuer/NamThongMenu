@@ -1,73 +1,166 @@
-:root {
-  --bg: #ffffff;
-  --text: #222;
-  --muted: #666;
-  --accent: #2a9d8f;
-  --card: #fafafa;
-  --border: #e0e0e0;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121212;
-    --text: #eee;
-    --muted: #aaa;
-    --accent: #34d399;
-    --card: #1e1e1e;
-    --border: #333;
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Your Café — Menu</title>
+<meta name="description" content="Your Café menu">
+<style>
+  :root{
+    --bg:#ffffff; --text:#222; --muted:#666; --accent:#2a9d8f;
+    --card:#fafafa; --border:#e0e0e0; --shadow:0 1px 2px rgba(0,0,0,.04);
   }
-}
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  background: var(--bg);
-  color: var(--text);
-}
-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 0.75rem 1rem;
-}
-h1 {
-  font-size: 1.25rem;
-  margin: 0;
-}
-section {
-  margin: 1.5rem 0;
-  padding: 0 1rem;
-}
-h2 {
-  font-size: 1.125rem;
-  margin-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.25rem;
-}
-.item {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  margin-bottom: 0.75rem;
-}
-.item .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.item .title {
-  font-weight: 600;
-}
-.item .price {
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-}
-.item .desc {
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin-top: 0.25rem;
-}
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#121212; --text:#eee; --muted:#aaa; --accent:#34d399;
+      --card:#1e1e1e; --border:#333; --shadow:0 1px 2px rgba(0,0,0,.3);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px}
+  /* Sticky header with brand + tabs */
+  header{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px}
+  .brand h1{font-size:20px;margin:0}
+  .notice{margin:0 16px 12px;color:var(--muted);font-size:.9rem}
+  /* Tabs */
+  nav#nav{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 12px}
+  nav#nav a{
+    flex-shrink:0;text-decoration:none;color:var(--text);
+    padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:var(--card);
+    box-shadow:var(--shadow);font-size:.92rem;white-space:nowrap
+  }
+  nav#nav a.active{border-color:var(--accent);color:var(--accent)}
+  /* Search */
+  .search{padding:0 16px 12px}
+  .search input{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text)
+  }
+  main{padding:16px 0 40px}
+  section{scroll-margin-top:110px;margin:20px 0}
+  h2{font-size:1.2rem;margin:0 0 10px;padding:0 4px;border-left:4px solid var(--accent)}
+  /* Grid items */
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:680px){ .grid{grid-template-columns:1fr 1fr} }
+  .item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .title{font-weight:600}
+  .price{font-variant-numeric:tabular-nums;color:var(--accent)}
+  .desc{margin:6px 0 0;color:var(--muted);font-size:.93rem}
+  .tags{margin-top:6px;font-size:.8rem;color:var(--accent)}
+  footer{border-top:1px solid var(--border);margin-top:28px}
+  .small{font-size:.85rem;color:var(--muted)}
+  .foot{padding:16px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap brand">
+    <h1 id="cafename">Your Café</h1>
+    <!-- Optional logo: place logo.png in repo root, then uncomment:
+    <img src="logo.png" alt="Logo" width="28" height="28"> -->
+  </div>
+  <p class="notice" id="notice">Prices include GST. Please advise staff of allergies.</p>
+  <div class="search">
+    <div class="wrap"><input id="q" type="search" placeholder="Search: latte, vegan, gluten-free…" aria-label="Search menu"></div>
+  </div>
+  <nav id="nav" class="wrap" aria-label="Sections"></nav>
+</header>
+
+<main class="wrap" id="content">
+  <!-- Sections will be injected here -->
+  <div id="menu"></div>
+  <footer class="small">
+    <div class="foot">© <span id="y"></span> <span id="footname">Your Café</span> · <span id="footerline">123 Sample St · Open daily 7am–3pm · 03 9000 0000</span></div>
+  </footer>
+</main>
+
+<script>
+(async function(){
+  const out = document.getElementById('menu');
+  const nav = document.getElementById('nav');
+  const q   = document.getElementById('q');
+
+  // Cache-bust to ensure price updates show immediately
+  const res = await fetch('menu.json?' + Date.now(), {cache:'no-store'}).catch(() => null);
+  if (!res || !res.ok){
+    out.innerHTML = '<p style="color:#c33">Sorry, the menu failed to load.</p>';
+    return;
+  }
+  const data = await res.json();
+
+  // Header + footer text
+  document.getElementById('cafename').textContent = data.name || 'Menu';
+  document.getElementById('footname').textContent = data.name || 'Menu';
+  document.getElementById('y').textContent = new Date().getFullYear();
+  if (data.notice)      document.getElementById('notice').textContent = data.notice;
+  if (data.footer_line) document.getElementById('footerline').textContent = data.footer_line;
+
+  const fmt = new Intl.NumberFormat(data.locale || 'en-AU', {style:'currency', currency: data.currency || 'AUD'});
+
+  // Build tabs + sections
+  nav.innerHTML = '';
+  out.innerHTML = '';
+  (data.sections || []).forEach(secData => {
+    // Tab
+    const a = document.createElement('a');
+    a.href = '#' + secData.slug;
+    a.textContent = secData.name;
+    nav.appendChild(a);
+
+    // Section
+    const sec = document.createElement('section');
+    sec.id = secData.slug;
+    const h2 = document.createElement('h2');
+    h2.textContent = (secData.emoji ? secData.emoji+' ' : '') + secData.name;
+    sec.appendChild(h2);
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    (secData.items || []).forEach(it => {
+      const art = document.createElement('article');
+      art.className = 'item';
+      art.dataset.tags = (it.tags || []).join(' ').toLowerCase();
+
+      art.innerHTML = `
+        <div class="row">
+          <div class="title">${it.name}</div>
+          <div class="price">${fmt.format(it.price || 0)}</div>
+        </div>
+        ${it.desc ? `<div class="desc">${it.desc}</div>` : ''}
+        ${it.tags && it.tags.length ? `<div class="tags">${it.tags.join(' • ')}</div>` : ''}
+      `;
+      grid.appendChild(art);
+    });
+
+    sec.appendChild(grid);
+    out.appendChild(sec);
+  });
+
+  // Live search filter
+  const items = () => Array.from(document.querySelectorAll('.item'));
+  q.addEventListener('input', () => {
+    const term = q.value.trim().toLowerCase();
+    items().forEach(it => {
+      const text = it.innerText.toLowerCase() + ' ' + (it.dataset.tags || '');
+      it.style.display = text.includes(term) ? '' : 'none';
+    });
+  });
+
+  // Highlight active tab while scrolling
+  const links = Array.from(nav.querySelectorAll('a'));
+  const sections = (data.sections || []).map(s => document.getElementById(s.slug));
+  const onScroll = () => {
+    const y = window.scrollY + 120; // offset for sticky header
+    let activeIndex = 0;
+    sections.forEach((sec, i) => { if (sec.offsetTop <= y) activeIndex = i; });
+    links.forEach((l,i)=> l.classList.toggle('active', i === activeIndex));
+  };
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>
