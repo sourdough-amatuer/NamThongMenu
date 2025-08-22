@@ -1,50 +1,73 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Hello Café — Menu</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
-    h1, h2 { margin-top: 1.5rem; }
-    .item { margin-bottom: 1rem; }
-    .price { float: right; font-weight: bold; }
-    .desc { font-size: 0.9em; color: #555; }
-  </style>
-</head>
-<body>
-  <h1 id="cafename"></h1>
-  <p id="notice"></p>
-  <div id="menu"></div>
-
-  <script>
-    async function loadMenu() {
-      const res = await fetch('menu.json?' + Date.now()); // prevent caching
-      const data = await res.json();
-
-      document.getElementById('cafename').textContent = data.name;
-      document.getElementById('notice').textContent = data.notice;
-
-      const menuDiv = document.getElementById('menu');
-      menuDiv.innerHTML = '';
-
-      data.sections.forEach(section => {
-        const sec = document.createElement('section');
-        sec.innerHTML = `<h2>${section.name}</h2>`;
-        section.items.forEach(it => {
-          const item = document.createElement('div');
-          item.className = 'item';
-          item.innerHTML = `
-            <span>${it.name}</span>
-            <span class="price">$${it.price.toFixed(2)}</span>
-            <div class="desc">${it.desc}</div>
-          `;
-          sec.appendChild(item);
-        });
-        menuDiv.appendChild(sec);
-      });
-    }
-    loadMenu();
-  </script>
-</body>
-</html>
+:root {
+  --bg: #ffffff;
+  --text: #222;
+  --muted: #666;
+  --accent: #2a9d8f;
+  --card: #fafafa;
+  --border: #e0e0e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212;
+    --text: #eee;
+    --muted: #aaa;
+    --accent: #34d399;
+    --card: #1e1e1e;
+    --border: #333;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+section {
+  margin: 1.5rem 0;
+  padding: 0 1rem;
+}
+h2 {
+  font-size: 1.125rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+}
+.item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.item .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.item .title {
+  font-weight: 600;
+}
+.item .price {
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.item .desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
