@@ -1,23 +1,78 @@
 {
-  "name": "Nam Thong",
+  "name": "Nam Thog",
   "currency": "MYR",
+  "locale": "Labuan",
   "notice": "Prices include GST. Please advise staff of allergies.",
+  "footer_line": "123 Sample St · Open daily 7am–3pm · 03 9000 0000",
   "sections": [
     {
       "slug": "coffee",
       "name": "Coffee",
+      "emoji": "☕",
       "items": [
-        { "name": "Flat White", "price": 5.0, "desc": "Double shot, velvety milk" },
-        { "name": "Long Black", "price": 4.5, "desc": "Double espresso over hot water" },
-        { "name": "Iced Latte", "price": 6.0, "desc": "Over ice. Oat/soy/almond available" }
+        {
+          "name": "Long Black",
+          "price": 4.5,
+          "desc": "Double espresso over hot water",
+          "tags": ["coffee", "black", "strong"]
+        },
+        {
+          "name": "Latte",
+          "price_hot": 5.0,
+          "price_iced": 6.0,
+          "desc": "Espresso with steamed or iced milk",
+          "tags": ["coffee", "milk", "iced"]
+        },
+        {
+          "name": "Cappuccino",
+          "options": [
+            { "label": "Small", "price": 4.8 },
+            { "label": "Large", "price": 5.5 }
+          ],
+          "desc": "Espresso, steamed milk, foam",
+          "tags": ["coffee", "milk"]
+        }
       ]
     },
     {
-      "slug": "brunch",
-      "name": "Brunch",
+      "slug": "tea",
+      "name": "Tea",
+      "emoji": "🍵",
       "items": [
-        { "name": "Avocado Toast", "price": 16.0, "desc": "Sourdough, feta, lemon, chilli flakes" },
-        { "name": "Smoked Salmon Bowl", "price": 19.0, "desc": "Brown rice, sesame greens, poached egg" }
+        {
+          "name": "English Breakfast",
+          "price": 4.0,
+          "desc": "Classic black tea",
+          "tags": ["tea", "black"]
+        },
+        {
+          "name": "Iced Green Tea",
+          "price": 5.0,
+          "desc": "Refreshing, lightly sweetened",
+          "tags": ["tea", "iced"]
+        }
+      ]
+    },
+    {
+      "slug": "food",
+      "name": "Food",
+      "emoji": "🥪",
+      "items": [
+        {
+          "name": "Ham & Cheese Toastie",
+          "price": 7.5,
+          "desc": "Served with side salad",
+          "tags": ["food", "toastie"]
+        },
+        {
+          "name": "Avocado Smash",
+          "options": [
+            { "label": "Regular", "price": 12.0 },
+            { "label": "With Feta", "price": 13.5 }
+          ],
+          "desc": "Sourdough, avocado, tomato, lemon",
+          "tags": ["food", "vegan"]
+        }
       ]
     }
   ]
