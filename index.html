@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Your Café — Menu</title>
-<meta name="description" content="View Nam Thong's Menu">
+<meta name="description" content="Your Café menu">
 <style>
   :root{
     --bg:#ffffff; --text:#222; --muted:#666; --accent:#2a9d8f;
@@ -48,7 +48,7 @@
   .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
   .title{font-weight:600}
   .price{font-variant-numeric:tabular-nums;color:var(--accent)}
-  .price-lines{ text-align:right; line-height:1.25; }
+  .price-lines{text-align:right;line-height:1.25}
   .desc{margin:6px 0 0;color:var(--muted);font-size:.93rem}
   .tags{margin-top:6px;font-size:.8rem;color:var(--accent)}
 
@@ -80,106 +80,176 @@
 
 <script>
 (async function(){
+  // ====== YOUR PUBLISHED SHEETS LINKS ======
+  const MENU_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR993n_rtbnc72EtXBa1wEpUZaOT2KkEKoTrKobaXUp8QXkDxHzRlOOiwYnTCdWNJPgfd0K9Zfo6fs0/pub?gid=1421581944&single=true&output=csv';
+  const SETTINGS_CSV_URL = null; // set to a published CSV if you later add a Settings tab
+
+  // ----- CSV parser (handles quotes/commas/newlines) -----
+  function parseCSV(text){
+    const rows = []; let i=0, field='', row=[], inQ=false;
+    while(i<text.length){
+      const c=text[i];
+      if(inQ){
+        if(c==='"' && text[i+1]==='"'){ field+='"'; i++; }
+        else if(c==='"'){ inQ=false; } else { field+=c; }
+      }else{
+        if(c==='"'){ inQ=true; }
+        else if(c===','){ row.push(field); field=''; }
+        else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+        else if(c!=='\r'){ field+=c; }
+      }
+      i++;
+    }
+    row.push(field); rows.push(row);
+    return rows;
+  }
+  async function fetchCSV(url){
+    const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return parseCSV(await res.text());
+  }
+
+  // ----- DOM refs -----
   const out = document.getElementById('menu');
   const nav = document.getElementById('nav');
   const q   = document.getElementById('q');
 
-  // Helper: flexible price renderer (single, Hot/Iced, or options[])
-  function renderPrice(it, fmt){
-    // Flexible options array: [{label:"Hot", price:5}, {label:"Iced", price:6}, {label:"Large", price:6.5}]
-    if (Array.isArray(it.options) && it.options.length){
-      return it.options
-        .filter(o => o && typeof o.price !== 'undefined')
-        .map(o => `${o.label ? (o.label + ': ') : ''}${fmt.format(Number(o.price) || 0)}`)
-        .join('<br>');
-    }
-    // Dual fields: price_hot / price_iced
-    const lines = [];
-    if (typeof it.price_hot  !== 'undefined') lines.push(`Hot: ${fmt.format(Number(it.price_hot) || 0)}`);
-    if (typeof it.price_iced !== 'undefined') lines.push(`Iced: ${fmt.format(Number(it.price_iced) || 0)}`);
-    if (lines.length) return lines.join('<br>');
-    // Fallback single price
-    return fmt.format(Number(it.price) || 0);
+  // ----- Load Settings (optional) -----
+  const settings = { name:'Your Café', notice:'Prices include GST.', footer_line:'', locale:'en-AU', currency:'AUD', emojis:{} };
+  if (SETTINGS_CSV_URL){
+    try{
+      const srows = await fetchCSV(SETTINGS_CSV_URL);
+      const [hdr,...rest] = srows;
+      for (const r of rest){
+        const k=(r[0]||'').trim(), v=(r[1]||'').trim();
+        if(!k) continue;
+        if(k.startsWith('emoji:')) settings.emojis[k.split(':')[1]] = v;
+        else settings[k]=v;
+      }
+    }catch(e){ console.warn('Settings CSV failed:', e); }
   }
 
-  // Fetch menu.json with cache-bust so updates appear immediately
-  const res = await fetch('menu.json?' + Date.now(), {cache:'no-store'}).catch(() => null);
-  if (!res || !res.ok){
-    out.innerHTML = '<p style="color:#c33">Sorry, the menu failed to load.</p>';
+  // ----- Load Menu -----
+  let mrows;
+  try{
+    mrows = await fetchCSV(MENU_CSV_URL);
+  }catch(e){
+    out.innerHTML = '<p style="color:#c33">Could not load the menu. Please try again.</p>';
+    console.error(e);
     return;
   }
-  const data = await res.json();
 
-  // Header + footer text
-  document.getElementById('cafename').textContent = data.name || 'Menu';
-  document.getElementById('footname').textContent = data.name || 'Menu';
+  if(!mrows || !mrows.length){
+    out.innerHTML = '<p>No data found in the CSV.</p>';
+    return;
+  }
+
+  const header = mrows[0].map(h=>h.trim().toLowerCase());
+  const idx = (n)=> header.indexOf(n);
+  const iSection=idx('section'), iName=idx('name'), iPrice=idx('price'),
+        iHot=idx('hot_price'), iIced=idx('iced_price'), iOptions=idx('options'),
+        iDesc=idx('desc'), iTags=idx('tags');
+
+  const toNum = v => {
+    const s = String(v ?? '').replace(/\$/g,'').replace(/,/g,'').trim();
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const items = mrows.slice(1).map(r => ({
+    section:(r[iSection]||'').trim(),
+    name:(r[iName]||'').trim(),
+    price: toNum(r[iPrice]),
+    price_hot: toNum(r[iHot]),
+    price_iced: toNum(r[iIced]),
+    options: String(r[iOptions]||'').split(';').map(s=>{
+      const [label,price]=s.split(':').map(x=> (x||'').trim());
+      const p = toNum(price);
+      if(!label || !Number.isFinite(p)) return null;
+      return {label, price:p};
+    }).filter(Boolean),
+    desc: iDesc>=0 ? String(r[iDesc]||'').trim() : '',
+    tags: iTags>=0 ? String(r[iTags]||'').split(',').map(s=>s.trim()).filter(Boolean) : []
+  })).filter(x => x.section && x.name);
+
+  // group by section (preserve order of first appearance)
+  const bySection = {};
+  const order = [];
+  for (const it of items){
+    if(!bySection[it.section]){ bySection[it.section]=[]; order.push(it.section); }
+    bySection[it.section].push(it);
+  }
+  const sections = order.map(name => ({
+    slug: name.toLowerCase().replace(/&/g,'and').replace(/[\/+]/g,' ').trim().replace(/\s+/g,'-'),
+    name,
+    emoji: settings.emojis?.[name] || ''
+  }));
+
+  // ----- Render helpers -----
+  const fmt = new Intl.NumberFormat(settings.locale || 'en-AU', {style:'currency', currency: settings.currency || 'AUD'});
+  function renderPrice(it){
+    if (Array.isArray(it.options) && it.options.length){
+      return it.options.map(o => `${o.label}: ${fmt.format(o.price)}`).join('<br>');
+    }
+    const lines=[];
+    if (Number.isFinite(it.price_hot))  lines.push(`Hot: ${fmt.format(it.price_hot)}`);
+    if (Number.isFinite(it.price_iced)) lines.push(`Iced: ${fmt.format(it.price_iced)}`);
+    if (lines.length) return lines.join('<br>');
+    if (Number.isFinite(it.price)) return fmt.format(it.price);
+    return '';
+  }
+
+  // ----- Header/Footer text -----
+  document.getElementById('cafename').textContent = settings.name || 'Menu';
+  document.getElementById('footname').textContent = settings.name || 'Menu';
   document.getElementById('y').textContent = new Date().getFullYear();
-  if (data.notice)      document.getElementById('notice').textContent = data.notice;
-  if (data.footer_line) document.getElementById('footerline').textContent = data.footer_line;
+  if (settings.notice)      document.getElementById('notice').textContent = settings.notice;
+  if (settings.footer_line) document.getElementById('footerline').textContent = settings.footer_line;
 
-  const fmt = new Intl.NumberFormat(data.locale || 'en-AU', {style:'currency', currency: data.currency || 'AUD'});
-
-  // Build tabs + sections
-  nav.innerHTML = '';
-  out.innerHTML = '';
-  (data.sections || []).forEach(secData => {
-    // Tab
-    const a = document.createElement('a');
-    a.href = '#' + secData.slug;
-    a.textContent = secData.name;
-    nav.appendChild(a);
-
-    // Section
-    const sec = document.createElement('section');
-    sec.id = secData.slug;
-    const h2 = document.createElement('h2');
-    h2.textContent = (secData.emoji ? secData.emoji+' ' : '') + secData.name;
-    sec.appendChild(h2);
-
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-
-    (secData.items || []).forEach(it => {
-      const art = document.createElement('article');
-      art.className = 'item';
-      art.dataset.tags = (it.tags || []).join(' ').toLowerCase();
-
-      art.innerHTML = `
+  // ----- Build tabs + sections -----
+  nav.innerHTML=''; out.innerHTML='';
+  sections.forEach(secData=>{
+    // tab
+    const a=document.createElement('a');
+    a.href='#'+secData.slug; a.textContent=secData.name; nav.appendChild(a);
+    // section
+    const sec=document.createElement('section'); sec.id=secData.slug;
+    const h2=document.createElement('h2'); h2.textContent=(secData.emoji?secData.emoji+' ':'')+secData.name; sec.appendChild(h2);
+    const grid=document.createElement('div'); grid.className='grid';
+    bySection[secData.name].forEach(it=>{
+      const art=document.createElement('article'); art.className='item'; art.dataset.tags=(it.tags||[]).join(' ').toLowerCase();
+      art.innerHTML=`
         <div class="row">
           <div class="title">${it.name}</div>
-          <div class="price price-lines">${renderPrice(it, fmt)}</div>
+          <div class="price price-lines">${renderPrice(it)}</div>
         </div>
         ${it.desc ? `<div class="desc">${it.desc}</div>` : ''}
         ${it.tags && it.tags.length ? `<div class="tags">${it.tags.join(' • ')}</div>` : ''}
       `;
       grid.appendChild(art);
     });
-
-    sec.appendChild(grid);
-    out.appendChild(sec);
+    sec.appendChild(grid); out.appendChild(sec);
   });
 
-  // Live search filter
-  const items = () => Array.from(document.querySelectorAll('.item'));
-  q.addEventListener('input', () => {
-    const term = q.value.trim().toLowerCase();
-    items().forEach(it => {
-      const text = it.innerText.toLowerCase() + ' ' + (it.dataset.tags || '');
-      it.style.display = text.includes(term) ? '' : 'none';
+  // ----- Search -----
+  const itemsEls = () => Array.from(document.querySelectorAll('.item'));
+  q.addEventListener('input', ()=>{
+    const term=q.value.trim().toLowerCase();
+    itemsEls().forEach(el=>{
+      const text=el.innerText.toLowerCase()+' '+(el.dataset.tags||'');
+      el.style.display = text.includes(term) ? '' : 'none';
     });
   });
 
-  // Highlight active tab while scrolling
-  const links = Array.from(nav.querySelectorAll('a'));
-  const sections = (data.sections || []).map(s => document.getElementById(s.slug));
-  const onScroll = () => {
-    const y = window.scrollY + 120; // offset for sticky header
-    let activeIndex = 0;
-    sections.forEach((sec, i) => { if (sec.offsetTop <= y) activeIndex = i; });
-    links.forEach((l,i)=> l.classList.toggle('active', i === activeIndex));
+  // ----- Active tab highlight -----
+  const links=Array.from(nav.querySelectorAll('a'));
+  const sectionEls=sections.map(s=>document.getElementById(s.slug));
+  const onScroll=()=>{
+    const y=window.scrollY+120; let active=0;
+    sectionEls.forEach((sec,i)=>{ if(sec && sec.offsetTop<=y) active=i; });
+    links.forEach((l,i)=> l.classList.toggle('active', i===active));
   };
-  document.addEventListener('scroll', onScroll, {passive:true});
-  onScroll();
+  document.addEventListener('scroll', onScroll, {passive:true}); onScroll();
 })();
 </script>
 </body>
