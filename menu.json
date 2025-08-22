@@ -1,0 +1,24 @@
+{
+  "name": "Hello Café",
+  "currency": "AUD",
+  "notice": "Prices include GST. Please advise staff of allergies.",
+  "sections": [
+    {
+      "slug": "coffee",
+      "name": "Coffee",
+      "items": [
+        { "name": "Flat White", "price": 5.0, "desc": "Double shot, velvety milk" },
+        { "name": "Long Black", "price": 4.5, "desc": "Double espresso over hot water" },
+        { "name": "Iced Latte", "price": 6.0, "desc": "Over ice. Oat/soy/almond available" }
+      ]
+    },
+    {
+      "slug": "brunch",
+      "name": "Brunch",
+      "items": [
+        { "name": "Avocado Toast", "price": 16.0, "desc": "Sourdough, feta, lemon, chilli flakes" },
+        { "name": "Smoked Salmon Bowl", "price": 19.0, "desc": "Brown rice, sesame greens, poached egg" }
+      ]
+    }
+  ]
+}
