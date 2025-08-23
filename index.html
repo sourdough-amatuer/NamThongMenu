@@ -277,53 +277,69 @@
   });
 
   // ----- Active tab highlight (click = instant, scroll/hash = sync) -----
-  const links = Array.from(nav.querySelectorAll('a'));
-  const sectionEls = sections.map(s => document.getElementById(s.slug));
-  
-  function setActiveByIndex(iActive){
-    links.forEach((l,i)=>{
-      const on = i === iActive;
-      l.classList.toggle('active', on);
-      if (on) l.setAttribute('aria-current','page'); else l.removeAttribute('aria-current');
-    });
-  }
-  
-  function indexFromHash(){
-    const h = (location.hash || '').slice(1);
-    const idx = sections.findIndex(s => s.slug === h);
-    return idx >= 0 ? idx : 0;
-  }
-  
-  // Click = instant feedback (keeps UI snappy)
-  links.forEach((link, i) => {
-    link.addEventListener('click', () => setActiveByIndex(i), {passive:true});
+// ----- Active tab highlight (section-top at viewport center) -----
+const links = Array.from(nav.querySelectorAll('a'));
+const sectionEls = sections.map(s => document.getElementById(s.slug));
+
+function setActiveByIndex(iActive){
+  links.forEach((l,i)=>{
+    const on = i === iActive;
+    l.classList.toggle('active', on);
+    if (on) l.setAttribute('aria-current','page'); else l.removeAttribute('aria-current');
   });
-  
-  // Scroll = choose the section whose bounds contain viewport center
-  const onScroll = () => {
-    const mid = window.scrollY + window.innerHeight * 0.5; // center of viewport
-    let active = 0;
-    for (let i=0;i<sectionEls.length;i++){
+}
+
+function indexFromHash(){
+  const h = (location.hash || '').slice(1);
+  const idx = sections.findIndex(s => s.slug === h);
+  return idx >= 0 ? idx : 0;
+}
+
+// Click: center the section's start line in the viewport & update hash immediately
+links.forEach((link, i) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = sections[i].slug;
+    const target = document.getElementById(id);
+    if (!target) return;
+    history.pushState(null, '', '#'+id);       // keep URL in sync
+    target.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+    setActiveByIndex(i);                       // instant visual feedback
+  });
+});
+
+// Scroll: pick the section whose TOP is nearest the viewport center
+let ticking = false;
+const onScroll = () => {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const center = window.scrollY + window.innerHeight * 0.5;
+    let active = 0, best = Infinity;
+    for (let i = 0; i < sectionEls.length; i++){
       const sec = sectionEls[i];
       if (!sec) continue;
-      const top = sec.offsetTop;
-      const bottom = top + sec.offsetHeight;
-      if (mid >= top && mid < bottom) { active = i; break; }
-      // Fallback: if center is above first, keep 0; if below last, keep last
-      if (mid >= bottom) active = i;
+      const d = Math.abs(sec.offsetTop - center);
+      if (d < best){ best = d; active = i; }
     }
     setActiveByIndex(active);
-  };
-  
-  // Hash changes (deep links/back/forward)
-  const onHashChange = () => setActiveByIndex(indexFromHash());
-  
-  // Init
-  setActiveByIndex(indexFromHash());
-  document.addEventListener('scroll', onScroll, {passive:true});
-  window.addEventListener('hashchange', onHashChange, {passive:true});
-  onScroll();
+    ticking = false;
+  });
+};
 
+// Hash navigation (back/forward/deep link): center the section and sync active
+const onHashChange = () => {
+  const i = indexFromHash();
+  const target = sectionEls[i];
+  if (target) target.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'});
+  setActiveByIndex(i);
+};
+
+// Init
+setActiveByIndex(indexFromHash());
+document.addEventListener('scroll', onScroll, {passive:true});
+window.addEventListener('hashchange', onHashChange, {passive:true});
+onScroll();
 })();
 </script>
 </body>
