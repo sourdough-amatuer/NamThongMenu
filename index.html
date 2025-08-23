@@ -279,43 +279,51 @@
   // ----- Active tab highlight (click = instant, scroll/hash = sync) -----
   const links = Array.from(nav.querySelectorAll('a'));
   const sectionEls = sections.map(s => document.getElementById(s.slug));
-
+  
   function setActiveByIndex(iActive){
     links.forEach((l,i)=>{
-      const isActive = i === iActive;
-      l.classList.toggle('active', isActive);
-      if (isActive) l.setAttribute('aria-current', 'page'); else l.removeAttribute('aria-current');
+      const on = i === iActive;
+      l.classList.toggle('active', on);
+      if (on) l.setAttribute('aria-current','page'); else l.removeAttribute('aria-current');
     });
   }
+  
   function indexFromHash(){
     const h = (location.hash || '').slice(1);
     const idx = sections.findIndex(s => s.slug === h);
     return idx >= 0 ? idx : 0;
   }
-
-  // Click = instant feedback
+  
+  // Click = instant feedback (keeps UI snappy)
   links.forEach((link, i) => {
-    link.addEventListener('click', () => setActiveByIndex(i));
+    link.addEventListener('click', () => setActiveByIndex(i), {passive:true});
   });
-
-  // Scroll = authoritative sync (1/3 viewport from top feels natural)
+  
+  // Scroll = choose the section whose bounds contain viewport center
   const onScroll = () => {
-    const line = window.scrollY + window.innerHeight * 0.33;
+    const mid = window.scrollY + window.innerHeight * 0.5; // center of viewport
     let active = 0;
-    sectionEls.forEach((sec, i) => {
-      if (sec && sec.offsetTop <= line) active = i;
-    });
+    for (let i=0;i<sectionEls.length;i++){
+      const sec = sectionEls[i];
+      if (!sec) continue;
+      const top = sec.offsetTop;
+      const bottom = top + sec.offsetHeight;
+      if (mid >= top && mid < bottom) { active = i; break; }
+      // Fallback: if center is above first, keep 0; if below last, keep last
+      if (mid >= bottom) active = i;
+    }
     setActiveByIndex(active);
   };
-
+  
   // Hash changes (deep links/back/forward)
   const onHashChange = () => setActiveByIndex(indexFromHash());
-
+  
   // Init
   setActiveByIndex(indexFromHash());
   document.addEventListener('scroll', onScroll, {passive:true});
   window.addEventListener('hashchange', onHashChange, {passive:true});
   onScroll();
+
 })();
 </script>
 </body>
