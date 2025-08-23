@@ -70,7 +70,7 @@
 <body>
 <header>
   <div class="wrap brand">
-    <h1 id="cafename">Your Café</h1>
+    <h1 id="cafename">Nam Thong Menu</h1>
     <!-- Optional logo (place logo.png in repo root):
     <img src="logo.png" alt="Logo" width="28" height="28"> -->
   </div>
@@ -252,15 +252,43 @@
   });
 
   // ----- Active tab highlight -----
-  const links=Array.from(nav.querySelectorAll('a'));
-  const sectionEls=sections.map(s=>document.getElementById(s.slug));
-  const onScroll=()=>{
-    const y=window.scrollY+120; let active=0;
-    sectionEls.forEach((sec,i)=>{ if(sec && sec.offsetTop<=y) active=i; });
-    links.forEach((l,i)=> l.classList.toggle('active', i===active));
-  };
-  document.addEventListener('scroll', onScroll, {passive:true}); onScroll();
-})();
+  // ----- Active tab highlight -----
+const links = Array.from(nav.querySelectorAll('a'));
+const sectionEls = sections.map(s => document.getElementById(s.slug));
+
+function setActiveByIndex(iActive){
+  links.forEach((l,i)=> l.classList.toggle('active', i === iActive));
+}
+
+function indexFromHash(){
+  const h = (location.hash || '').replace('#','');
+  const idx = sections.findIndex(s => s.slug === h);
+  return idx >= 0 ? idx : 0;
+}
+
+// Click = immediate highlight (snappy), let scroll sync refine after
+links.forEach((link, i) => {
+  link.addEventListener('click', () => setActiveByIndex(i), {passive:true});
+});
+
+// Scroll = authoritative sync (1/3 viewport from top feels right)
+  const onScroll = () => {
+  const line = window.scrollY + window.innerHeight * 0.33;
+  let active = 0;
+  sectionEls.forEach((sec, i) => {
+    if (sec && sec.offsetTop <= line) active = i;
+  });
+  setActiveByIndex(active);
+};
+
+// Hash changes (e.g. deep link or back/forward)
+const onHashChange = () => setActiveByIndex(indexFromHash());
+
+// Init: prefer hash if present; then run scroll sync
+setActiveByIndex(indexFromHash());
+document.addEventListener('scroll', onScroll, {passive:true});
+window.addEventListener('hashchange', onHashChange, {passive:true});
+onScroll();
 </script>
 </body>
 </html>
